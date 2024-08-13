@@ -26,15 +26,18 @@ runs:
   steps:
     - name: Deploy to Server
       run: |
+        json_payload=`echo "{
+          \"repo\": \"${{ inputs.repo }}\",
+          \"name\": \"${{ inputs.name }}\",
+          \"path\": \"${{ inputs.path }}\",
+          \"port\": ${{ inputs.port }},
+          \"environment\": \"${{ inputs.environment }}\"
+        }"`
+        echo "Sending JSON payload:"
+        echo "$json_payload"
         curl -X POST https://nyx.arohalabs.tech/deploy \
         -H "Content-Type: application/json" \
-        -d '{
-              "repo": "${{ inputs.repo }}",
-              "name": "${{ inputs.name }}",
-              "path": "${{ inputs.path }}",
-              "port": ${ inputs.port },
-              "environment": "${{ inputs.environment }}"
-            }'
+        -d "$json_payload"
       shell: bash
 
     - name: Check Service Status
