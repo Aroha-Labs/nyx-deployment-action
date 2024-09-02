@@ -1,5 +1,9 @@
 name: "Nyx Deployment"
 description: "Deploy services using the Nyx deployment API"
+on:
+  release:
+    types: [published]
+
 inputs:
   environment:
     description: "Deployment environment"
@@ -21,34 +25,59 @@ inputs:
     description: "Git repository URL"
     required: false
     default: "${{ github.event.repository.ssh_url }}"
-runs:
-  using: "composite"
-  steps:
-    - name: Deploy to Server
-      run: |
-        json_payload=`echo "{
-          \"repo\": \"${{ inputs.repo }}\",
-          \"name\": \"${{ inputs.name }}\",
-          \"path\": \"${{ inputs.path }}\",
-          \"port\": ${{ inputs.port }},
-          \"environment\": \"${{ inputs.environment }}\"
-        }"`
-        echo "Sending JSON payload:"
-        echo "$json_payload"
-        curl -X POST https://nyx.arohalabs.tech/deploy \
-        -H "Content-Type: application/json" \
-        -d "$json_payload"
-      shell: bash
+  newrelic_guid:
+    description: "New Relic Deployment Entity GUID"
+    required: false
+    default: ""
 
-    - name: Check Service Status
-      run: |
-        response=$(curl -s https://nyx.arohalabs.tech/ps/${{ inputs.environment }}/${{ inputs.name }})
-        state=$(echo "$response" | jq -r '.[0].State')
-        if [[ "$state" == "running" ]]; then
-          echo "Service is running successfully."
-        else
-          echo "Service is not running. Detailed response:"
-          echo "$response" | jq '.'
-          exit 1
-        fi
-      shell: bash
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy Service
+    steps:
+      - name: Deploy to Server
+        run: |
+          json_payload=`echo "{
+            \"repo\": \"${{ inputs.repo }}\",
+            \"name\": \"${{ inputs.name }}\",
+            \"path\": \"${{ inputs.path }}\",
+            \"port\": ${{ inputs.port }},
+            \"environment\": \"${{ inputs.environment }}\"
+          }"`
+          echo "Sending JSON payload:"
+          echo "$json_payload"
+          curl -X POST https://nyx.arohalabs.tech/deploy \
+          -H "Content-Type: application/json" \
+          -d "$json_payload"
+        shell: bash
+
+      - name: Check Service Status
+        run: |
+          response=$(curl -s https://nyx.arohalabs.tech/ps/${{ inputs.environment }}/${{ inputs.name }})
+          state=$(echo "$response" | jq -r '.[0].State')
+          if [[ "$state" == "running" ]]; then
+            echo "Service is running successfully."
+          else
+            echo "Service is not running. Detailed response:"
+            echo "$response" | jq '.'
+            exit 1
+          fi
+        shell: bash
+
+  newrelic:
+    runs-on: ubuntu-latest
+    name: New Relic
+    needs: deploy
+    if: ${{ inputs.newrelic_guid != '' }}
+    steps:
+      - name: Set Release Version from Tag
+        run: echo "RELEASE_VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
+
+      - name: New Relic Application Deployment Marker
+        uses: newrelic/deployment-marker-action@v2.2.0
+        with:
+          apiKey: ${{ secrets.NEW_RELIC_API_KEY }}
+          region: "US"
+          guid: ${{ inputs.newrelic_guid }}
+          version: "${{ env.RELEASE_VERSION }}"
+          user: "${{ github.actor }}"
