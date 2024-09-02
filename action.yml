@@ -77,7 +77,6 @@ jobs:
         uses: newrelic/deployment-marker-action@v2.2.0
         with:
           apiKey: ${{ secrets.NEW_RELIC_API_KEY }}
-          region: "US"
           guid: ${{ inputs.newrelic_guid }}
           version: "${{ env.RELEASE_VERSION }}"
           user: "${{ github.actor }}"
