@@ -29,6 +29,10 @@ inputs:
     description: "New Relic Deployment Entity GUID"
     required: false
     default: ""
+  version:
+    description: "Deployment version (optional, overrides release tag)"
+    required: false
+    default: ""
 
 jobs:
   deploy:
@@ -71,7 +75,12 @@ jobs:
     if: ${{ inputs.newrelic_guid != '' }}
     steps:
       - name: Set Release Version from Tag
-        run: echo "RELEASE_VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
+        run: |
+          if [[ -z "${{ inputs.version }}" ]]; then
+            echo "RELEASE_VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
+          else
+            echo "RELEASE_VERSION=${{ inputs.version }}" >> $GITHUB_ENV
+          fi
 
       - name: New Relic Application Deployment Marker
         uses: newrelic/deployment-marker-action@v2.2.0
