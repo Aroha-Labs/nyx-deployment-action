@@ -77,7 +77,7 @@ jobs:
       - name: Set Release Version from Tag
         run: |
           if [[ -z "${{ inputs.version }}" ]]; then
-            echo "RELEASE_VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
+            echo "RELEASE_VERSION=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
           else
             echo "RELEASE_VERSION=${{ inputs.version }}" >> $GITHUB_ENV
           fi
