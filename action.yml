@@ -1,89 +1,81 @@
-name: "Nyx Deployment"
-description: "Deploy services using the Nyx deployment API"
-on:
-  release:
-    types: [published]
-
+name: Nyx Deployment
+description: Deploy services using the Nyx deployment API
 inputs:
   environment:
-    description: "Deployment environment"
+    description: Deployment environment
     required: false
-    default: "stg"
+    default: stg
   name:
-    description: "Name of the service to deploy"
+    description: Name of the service to deploy
     required: false
-    default: "${{ github.event.repository.name }}"
+    default: '${{ github.event.repository.name }}'
   path:
-    description: "Deployment path"
+    description: Deployment path
     required: false
-    default: "/"
+    default: /
   port:
-    description: "Service port"
+    description: Service port
     required: false
-    default: "80"
+    default: '80'
   repo:
-    description: "Git repository URL"
+    description: Git repository URL
     required: false
-    default: "${{ github.event.repository.ssh_url }}"
+    default: '${{ github.event.repository.ssh_url }}'
   newrelic_guid:
-    description: "New Relic Deployment Entity GUID"
+    description: New Relic Deployment Entity GUID
     required: false
-    default: ""
+    default: ''
   version:
-    description: "Deployment version (optional, overrides release tag)"
+    description: 'Deployment version (optional, overrides release tag)'
     required: false
-    default: ""
+    default: ''
+runs:
+  using: composite
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: Deploy to Server
+      run: |
+        json_payload=`echo "{
+          \"repo\": \"${{ inputs.repo }}\",
+          \"name\": \"${{ inputs.name }}\",
+          \"path\": \"${{ inputs.path }}\",
+          \"port\": ${{ inputs.port }},
+          \"environment\": \"${{ inputs.environment }}\"
+        }"`
+        echo "Sending JSON payload:"
+        echo "$json_payload"
+        curl -X POST https://nyx.arohalabs.tech/deploy \
+        -H "Content-Type: application/json" \
+        -d "$json_payload"
+      shell: bash
+    - name: Check Service Status
+      run: >
+        response=$(curl -s https://nyx.arohalabs.tech/ps/${{ inputs.environment
+        }}/${{ inputs.name }})
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    name: Deploy Service
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+        state=$(echo "$response" | jq -r '.[0].State')
 
-      - name: Deploy to Server
-        run: |
-          json_payload=`echo "{
-            \"repo\": \"${{ inputs.repo }}\",
-            \"name\": \"${{ inputs.name }}\",
-            \"path\": \"${{ inputs.path }}\",
-            \"port\": ${{ inputs.port }},
-            \"environment\": \"${{ inputs.environment }}\"
-          }"`
-          echo "Sending JSON payload:"
-          echo "$json_payload"
-          curl -X POST https://nyx.arohalabs.tech/deploy \
-          -H "Content-Type: application/json" \
-          -d "$json_payload"
-        shell: bash
-
-      - name: Check Service Status
-        run: |
-          response=$(curl -s https://nyx.arohalabs.tech/ps/${{ inputs.environment }}/${{ inputs.name }})
-          state=$(echo "$response" | jq -r '.[0].State')
-          if [[ "$state" == "running" ]]; then
-            echo "Service is running successfully."
-          else
-            echo "Service is not running. Detailed response:"
-            echo "$response" | jq '.'
-            exit 1
-          fi
-        shell: bash
-
-      - name: Set Release Version from Tag
-        if: ${{ inputs.newrelic_guid != '' }}
-        run: |
-          if [[ -z "${{ inputs.version }}" ]]; then
-            echo "RELEASE_VERSION=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-          else
-            echo "RELEASE_VERSION=${{ inputs.version }}" >> $GITHUB_ENV
-          fi
-
-      - name: New Relic Application Deployment Marker
-        if: ${{ inputs.newrelic_guid != '' }}
-        uses: newrelic/deployment-marker-action@v2.2.0
-        with:
-          apiKey: ${{ secrets.NEW_RELIC_DEPLOYMENT_MARKER_KEY }}
-          guid: ${{ inputs.newrelic_guid }}
-          version: "${{ env.RELEASE_VERSION }}"
+        if [[ "$state" == "running" ]]; then
+          echo "Service is running successfully."
+        else
+          echo "Service is not running. Detailed response:"
+          echo "$response" | jq '.'
+          exit 1
+        fi
+      shell: bash
+    - name: Set Release Version from Tag
+      if: '${{ inputs.newrelic_guid != '''' }}'
+      run: |
+        if [[ -z "${{ inputs.version }}" ]]; then
+          echo "RELEASE_VERSION=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+        else
+          echo "RELEASE_VERSION=${{ inputs.version }}" >> $GITHUB_ENV
+        fi
+    - name: New Relic Application Deployment Marker
+      if: '${{ inputs.newrelic_guid != '''' }}'
+      uses: newrelic/deployment-marker-action@v2.2.0
+      with:
+        apiKey: '${{ secrets.NEW_RELIC_DEPLOYMENT_MARKER_KEY }}'
+        guid: '${{ inputs.newrelic_guid }}'
+        version: '${{ env.RELEASE_VERSION }}'
