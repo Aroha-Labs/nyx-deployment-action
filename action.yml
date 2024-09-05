@@ -79,8 +79,8 @@ runs:
 
     - name: New Relic Application Deployment Marker
       if: ${{ inputs.newrelic_guid != '' }}
-      uses: newrelic/deployment-marker-action@v2.2.0
-      with:
-        apiKey: '${{ secrets.NEW_RELIC_DEPLOYMENT_MARKER_KEY }}'
-        guid: '${{ inputs.newrelic_guid }}'
-        version: '${{ env.RELEASE_VERSION }}'
+      run: |
+        curl -X POST https://api.newrelic.com/v2/applications/${{ inputs.newrelic_guid }}/deployments.json \
+        -H "X-Api-Key:${{ inputs.newrelic_api_key }}" \
+        -d "deployment[revision]=${{ env.RELEASE_VERSION }}"
+      shell: bash
