@@ -39,6 +39,9 @@ jobs:
     runs-on: ubuntu-latest
     name: Deploy Service
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
       - name: Deploy to Server
         run: |
           json_payload=`echo "{
@@ -68,13 +71,8 @@ jobs:
           fi
         shell: bash
 
-  newrelic:
-    runs-on: ubuntu-latest
-    name: New Relic
-    needs: deploy
-    if: ${{ inputs.newrelic_guid != '' }}
-    steps:
       - name: Set Release Version from Tag
+        if: ${{ inputs.newrelic_guid != '' }}
         run: |
           if [[ -z "${{ inputs.version }}" ]]; then
             echo "RELEASE_VERSION=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
@@ -83,9 +81,9 @@ jobs:
           fi
 
       - name: New Relic Application Deployment Marker
+        if: ${{ inputs.newrelic_guid != '' }}
         uses: newrelic/deployment-marker-action@v2.2.0
         with:
-          apiKey: ${{ secrets.NEW_RELIC_API_KEY }}
+          apiKey: ${{ secrets.NEW_RELIC_DEPLOYMENT_MARKER_KEY }}
           guid: ${{ inputs.newrelic_guid }}
           version: "${{ env.RELEASE_VERSION }}"
-          user: "${{ github.actor }}"
