@@ -29,6 +29,10 @@ inputs:
     description: 'Deployment version (optional, overrides release tag)'
     required: false
     default: ''
+  newrelic_api_key:
+    description: 'New Relic Deployment Marker API Key'
+    required: false
+    default: ''
 runs:
   using: composite
   steps:
@@ -72,6 +76,7 @@ runs:
         else
           echo "RELEASE_VERSION=${{ inputs.version }}" >> $GITHUB_ENV
         fi
+      shell: bash
     - name: New Relic Application Deployment Marker
       if: '${{ inputs.newrelic_guid != '''' }}'
       uses: newrelic/deployment-marker-action@v2.2.0
@@ -79,3 +84,4 @@ runs:
         apiKey: '${{ secrets.NEW_RELIC_DEPLOYMENT_MARKER_KEY }}'
         guid: '${{ inputs.newrelic_guid }}'
         version: '${{ env.RELEASE_VERSION }}'
+      shell: bash
