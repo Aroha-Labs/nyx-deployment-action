@@ -81,6 +81,6 @@ runs:
       if: ${{ inputs.newrelic_guid != '' }}
       uses: newrelic/deployment-marker-action@v2.2.0
       with:
-        apiKey: '${{ secrets.NEW_RELIC_DEPLOYMENT_MARKER_KEY }}'
+        apiKey: '${{ github.secrets.NEW_RELIC_DEPLOYMENT_MARKER_KEY }}'
         guid: '${{ inputs.newrelic_guid }}'
         version: '${{ env.RELEASE_VERSION }}'
