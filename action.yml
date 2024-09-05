@@ -38,6 +38,7 @@ runs:
   steps:
     - name: Checkout code
       uses: actions/checkout@v2
+
     - name: Deploy to Server
       run: |
         json_payload=`echo "{
@@ -53,13 +54,11 @@ runs:
         -H "Content-Type: application/json" \
         -d "$json_payload"
       shell: bash
+
     - name: Check Service Status
-      run: >
-        response=$(curl -s https://nyx.arohalabs.tech/ps/${{ inputs.environment
-        }}/${{ inputs.name }})
-
+      run: |
+        response=$(curl -s https://nyx.arohalabs.tech/ps/${{ inputs.environment }}/${{ inputs.name }})
         state=$(echo "$response" | jq -r '.[0].State')
-
         if [[ "$state" == "running" ]]; then
           echo "Service is running successfully."
         else
@@ -68,20 +67,20 @@ runs:
           exit 1
         fi
       shell: bash
+
     - name: Set Release Version from Tag
-      if: '${{ inputs.newrelic_guid != '''' }}'
+      if: ${{ inputs.newrelic_guid != '' }}
       run: |
         if [[ -z "${{ inputs.version }}" ]]; then
           echo "RELEASE_VERSION=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
         else
           echo "RELEASE_VERSION=${{ inputs.version }}" >> $GITHUB_ENV
-        fi
       shell: bash
+
     - name: New Relic Application Deployment Marker
-      if: '${{ inputs.newrelic_guid != '''' }}'
-      uses: newrelic/deployment-marker-action@v2.2.0
-      with:
-        apiKey: '${{ secrets.NEW_RELIC_DEPLOYMENT_MARKER_KEY }}'
-        guid: '${{ inputs.newrelic_guid }}'
-        version: '${{ env.RELEASE_VERSION }}'
+      if: ${{ inputs.newrelic_guid != '' }}
+      run: |
+        curl -X POST https://api.newrelic.com/v2/applications/${{ inputs.newrelic_guid }}/deployments.json \
+        -H "X-Api-Key:${{ inputs.newrelic_api_key }}" \
+        -d "deployment[revision]=${{ env.RELEASE_VERSION }}&deployment[user]=GitHub Actions&deployment[description]=Deployment from GitHub"
       shell: bash
