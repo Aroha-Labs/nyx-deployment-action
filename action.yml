@@ -29,10 +29,10 @@ inputs:
     description: 'Deployment version (optional, overrides release tag)'
     required: false
     default: ''
-  newrelic_api_key:
-    description: 'New Relic Deployment Marker API Key'
-    required: false
-    default: ''
+  # newrelic_api_key:
+  #   description: 'New Relic Deployment Marker API Key'
+  #   required: false
+  #   default: ''
 runs:
   using: composite
   steps:
