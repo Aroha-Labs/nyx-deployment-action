@@ -33,6 +33,10 @@ inputs:
     description: 'New Relic Deployment Marker API Key'
     required: false
     default: ''
+  user:
+    description: 'Deployment user'
+    required: false
+    default: '${{ github.actor }}'
 runs:
   using: composite
   steps:
@@ -84,3 +88,4 @@ runs:
         apiKey: '${{ github.secrets.NEW_RELIC_DEPLOYMENT_MARKER_KEY }}'
         guid: '${{ inputs.newrelic_guid }}'
         version: '${{ env.RELEASE_VERSION }}'
+        user: '${{ github.actor }}'
