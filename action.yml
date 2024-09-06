@@ -89,6 +89,6 @@ runs:
       uses: newrelic/deployment-marker-action@v2.3.0
       with:
         apiKey: '${{ inputs.NEW_RELIC_DEPLOYMENT_MARKER_KEY }}'
-        guid: '${{ inputs.newrelic_guid }}'
+        newrelic_guid: '${{ inputs.newrelic_guid }}'
         version: '${{ env.RELEASE_VERSION }}'
         region: '${{ inputs.region }}'
