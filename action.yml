@@ -21,7 +21,7 @@ inputs:
     description: Git repository URL
     required: false
     default: '${{ github.event.repository.ssh_url }}'
-  newrelic_guid:
+  guid:
     description: New Relic Deployment Entity GUID
     required: false
     default: ''
@@ -73,7 +73,7 @@ runs:
       shell: bash
 
     - name: Set Release Version from Tag
-      if: ${{ inputs.newrelic_guid != '' }}
+      if: ${{ inputs.guid != '' }}
       run: |
         if [[ -z "${{ inputs.version }}" ]]; then
           RELEASE_VERSION=$(git rev-parse --short HEAD)
@@ -85,10 +85,10 @@ runs:
 
 
     - name: New Relic Application Deployment Marker
-      if: ${{ inputs.newrelic_guid != '' }}
+      if: ${{ inputs.guid != '' }}
       uses: newrelic/deployment-marker-action@v2.3.0
       with:
         apiKey: '${{ inputs.NEW_RELIC_DEPLOYMENT_MARKER_KEY }}'
-        newrelic_guid: '${{ inputs.newrelic_guid }}'
+        guid: '${{ inputs.guid }}'
         version: '${{ env.RELEASE_VERSION }}'
         region: '${{ inputs.region }}'
